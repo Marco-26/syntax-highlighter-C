@@ -1,8 +1,3 @@
-# read in text file based on what is received in cli args.
-# parse it to get the tokens
-# based on token types assign a color
-# maybe add state machine to know if we are in a string, for example
-
 import argparse
 import os
 import sys
@@ -42,7 +37,6 @@ def reset_variables(initial_index: int, current_index: int, current_token:str):
   initial_index = current_index
   current_token = ""
   current_index += 1
-  
 
 def parse_code(content: str) -> TokenList:
   c_types = {"int", "float", "char"}
