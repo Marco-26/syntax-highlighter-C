@@ -21,10 +21,26 @@ class TokenType(Enum):
   PUNCTUATORS = "punctuators" # ; ( ) [ ] { }
   UNKNOWN = "unknown" # unknown tokens
   
+MONOKAI_THEME = {
+  TokenType.PREPOC: "#F92672",
+  TokenType.KEYWORD: "#F92672",
+  TokenType.TYPE: "#66D9EF",
+  TokenType.IDENT: "#F8F8F2",
+  TokenType.NUMBER: "#AE81FF",
+  TokenType.STRING_LITERAL: "#E6DB74",
+  TokenType.CHAR: "#E6DB74",
+  TokenType.COMMENT: "#75715E",
+  TokenType.OP: "#F92672",
+  TokenType.WHITESPACE: "#F8F8F2",
+  TokenType.PUNCTUATORS: "#F8F8F2",
+  TokenType.UNKNOWN: "#FD971F",
+}
+  
 @dataclass(frozen=True, slots=True)
 class Token():
   token_type: TokenType
   token_value: str
+  token_color: str
   starting_pos: int
   ending_pos: int
   
@@ -71,19 +87,19 @@ def parse_code(content: str) -> TokenList:
       
     match current_token:
       case _ if current_token in c_types:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.TYPE, current_token, initial_index, current_index))
+        add_token_to_list(token_list=tokens, new_token=Token(TokenType.TYPE, current_token, MONOKAI_THEME[TokenType.TYPE], initial_index, current_index))
         initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_identifiers:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.IDENT, current_token, initial_index, current_index))
+        add_token_to_list(token_list=tokens, new_token=Token(TokenType.IDENT, current_token, MONOKAI_THEME[TokenType.IDENT],initial_index, current_index))
         initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_punctuators:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.PUNCTUATORS, current_token, initial_index, current_index))
+        add_token_to_list(token_list=tokens, new_token=Token(TokenType.PUNCTUATORS, current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], initial_index, current_index))
         initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_keywords:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.OP, current_token, initial_index, current_index))
+        add_token_to_list(token_list=tokens, new_token=Token(TokenType.OP, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
         initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _:
@@ -107,4 +123,7 @@ if __name__ == "__main__":
     
   content = read_file_content(filepath=filepath)
   tokens = parse_code(content=content)
-  print(len(tokens), tokens)
+  
+  print("Total tokens:", len(tokens))
+  for token in tokens:
+      print(token)
