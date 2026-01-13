@@ -37,6 +37,7 @@ def reset_variables(initial_index: int, current_index: int, current_token:str):
   initial_index = current_index
   current_token = ""
   current_index += 1
+  return initial_index, current_index, current_token
 
 def parse_code(content: str) -> TokenList:
   c_types = {"int", "float", "char"}
@@ -67,23 +68,23 @@ def parse_code(content: str) -> TokenList:
     if len(current_token) == 1:
       # detect if this is a start of new word
       initial_index = current_index
-    
+      
     match current_token:
       case _ if current_token in c_types:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.TYPE, current_token, initial_index, current_index))
-        reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_identifiers:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.IDENT, current_token, initial_index, current_index))
-        reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_punctuators:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.PUNCTUATORS, current_token, initial_index, current_index))
-        reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _ if current_token in c_keywords:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.OP, current_token, initial_index, current_index))
-        reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
         continue
       case _:
         current_index += 1
