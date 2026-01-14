@@ -1,41 +1,14 @@
 import argparse
 import os
 import sys
-from enum import Enum
 from dataclasses import dataclass
+from token_types import TokenType
+from themes import AVAILABLE_THEMES, MONOKAI_THEME
 
 parser = argparse.ArgumentParser(prog="C Syntax Highlighter")
 parser.add_argument("filepath")
+parser.add_argument("-theme", choices=AVAILABLE_THEMES, default=AVAILABLE_THEMES["MONOKAI_THEME"])
 
-class TokenType(Enum):
-  PREPOC = "prepoc", # #include, #define, #if, etc.
-  KEYWORD = "keyword" # if, return, while, typedef,
-  TYPE = "type" #int, char, float, void,
-  IDENT = "ident" # names
-  NUMBER = "number"
-  STRING_LITERAL = "string_literal", # everything inside double quote ""
-  CHAR = "char" # everything inside ''
-  COMMENT = "commment" # everything followed by // or /* */
-  OP = "operators" # + -
-  WHITESPACE = "whitespace" # /n
-  PUNCTUATORS = "punctuators" # ; ( ) [ ] { }
-  UNKNOWN = "unknown" # unknown tokens
-  
-MONOKAI_THEME = {
-  TokenType.PREPOC: "#F92672",
-  TokenType.KEYWORD: "#F92672",
-  TokenType.TYPE: "#66D9EF",
-  TokenType.IDENT: "#F8F8F2",
-  TokenType.NUMBER: "#AE81FF",
-  TokenType.STRING_LITERAL: "#E6DB74",
-  TokenType.CHAR: "#E6DB74",
-  TokenType.COMMENT: "#75715E",
-  TokenType.OP: "#F92672",
-  TokenType.WHITESPACE: "#F8F8F2",
-  TokenType.PUNCTUATORS: "#F8F8F2",
-  TokenType.UNKNOWN: "#FD971F",
-}
-  
 @dataclass(frozen=True, slots=True)
 class Token():
   token_type: TokenType
@@ -55,12 +28,12 @@ def reset_variables(initial_index: int, current_index: int, current_token:str):
   current_index += 1
   return initial_index, current_index, current_token
 
+c_types = {"int", "float", "char"}
+c_identifiers = {"main"} # this should not be a set. Identifiers are created during parsing, a user can identify a function by one name, while other user can identify it by another
+c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
+c_keywords = {'return'}
+
 def parse_code(content: str) -> TokenList:
-  c_types = {"int", "float", "char"}
-  c_identifiers = {"main"}
-  c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
-  c_keywords = {'return'}
-  
   tokens: TokenList = []
   
   current_token: str = ""
@@ -126,10 +99,12 @@ def read_file_content(filepath:str) -> str:
 if __name__ == "__main__":
   args = parser.parse_args()
   filepath = args.filepath
+  theme = args.theme # TODO: USE IT LATER
+  
   if not os.path.exists(filepath):
     print("Filepath provided does not exists...")
     sys.exit(1)
-    
+  
   content = read_file_content(filepath=filepath)
   tokens = parse_code(content=content)
   
