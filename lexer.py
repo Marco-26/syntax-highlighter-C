@@ -81,6 +81,15 @@ def parse_code(content: str) -> TokenList:
       current_index += 1
       continue
     
+    if c.isdigit():
+      if not content[current_index + 1].isspace() and content[current_index + 1].isdigit():
+        current_index += 1
+        continue
+      
+      add_token_to_list(token_list=tokens, new_token=Token(TokenType.NUMBER, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
+      initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+      continue
+    
     if len(current_token) == 1:
       # detect if this is a start of new word
       initial_index = current_index
