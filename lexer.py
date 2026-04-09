@@ -47,11 +47,9 @@ def parse_code(content: str) -> TokenList:
     current_token += current_character
     
     if current_character.isspace():
-      if current_token[0] == '"':
-        is_in_string_literal = True
-        current_index += 1
-        continue
-      current_token = ""
+      if not is_in_string_literal:
+        current_token = ""
+        
       current_index += 1
       continue
     
@@ -65,15 +63,16 @@ def parse_code(content: str) -> TokenList:
       initial_index, current_index, current_token = reset_variables(initial_index, current_index)
       continue
     
-    if is_in_string_literal and current_character == '"':
+    if current_character == '"':
+      if not is_in_string_literal:
+        is_in_string_literal = True
+        current_index += 1
+        continue
+      
       is_in_string_literal = False
       add_token_to_list(token_list=tokens, new_token=Token(TokenType.STRING_LITERAL, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
       initial_index, current_index, current_token = reset_variables(initial_index, current_index)
       continue
-      
-    if len(current_token) == 1:
-      # detect if this is a start of new word
-      initial_index = current_index
       
     match current_token:
       case _ if current_token in c_types:
@@ -111,7 +110,7 @@ def read_file_content(filepath:str) -> str:
 if __name__ == "__main__":
   args = parser.parse_args()
   filepath = args.filepath
-  theme = args.theme # TODO: USE IT LATER
+  theme = args.theme
   
   if not os.path.exists(filepath):
     print("Filepath provided does not exists...")
