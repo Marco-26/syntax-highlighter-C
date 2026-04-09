@@ -6,10 +6,11 @@ class TokenType(Enum):
   TYPE = "type" #int, char, float, void,
   IDENT = "ident" # names
   NUMBER = "number"
-  STRING_LITERAL = "string_literal", # everything inside double quote ""
+  STRING_LITERAL = "string_literal" # everything inside double quote ""
   CHAR = "char" # everything inside ''
   COMMENT = "commment" # everything followed by // or /* */
   OP = "operators" # + -
   WHITESPACE = "whitespace" # /n
   PUNCTUATORS = "punctuators" # ; ( ) [ ] { }
+  FUNCTION = "function" # printf
   UNKNOWN = "unknown" # unknown tokens

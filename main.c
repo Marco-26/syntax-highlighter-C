@@ -1,4 +1,5 @@
 int main()
 {
-  return 8912313123;
+  printf("Hello world!");
+  return 0;
 }
