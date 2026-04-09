@@ -22,11 +22,8 @@ type TokenList = list[Token]
 def add_token_to_list(token_list: TokenList, new_token: Token):
   token_list.append(new_token)
   
-def reset_variables(initial_index: int, current_index: int, current_token:str):
-  initial_index = current_index
-  current_token = ""
-  current_index += 1
-  return initial_index, current_index, current_token
+def reset_variables(initial_index: int, current_index: int):
+  return initial_index + 1, current_index + 1, ""
 
 c_types = {"int", "float", "char"}
 c_identifiers = {"main"} # this should not be a set. Identifiers are created during parsing, a user can identify a function by one name, while other user can identify it by another
@@ -60,18 +57,18 @@ def parse_code(content: str) -> TokenList:
     
     # indentified number
     if current_character.isdigit():
-      if not content[current_index + 1].isspace() and content[current_index + 1].isdigit():
+      if current_index + 1 < content_length and not content[current_index + 1].isspace() and content[current_index + 1].isdigit():
         current_index += 1
         continue
       
       add_token_to_list(token_list=tokens, new_token=Token(TokenType.NUMBER, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
-      initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+      initial_index, current_index, current_token = reset_variables(initial_index, current_index)
       continue
     
     if is_in_string_literal and current_character == '"':
       is_in_string_literal = False
       add_token_to_list(token_list=tokens, new_token=Token(TokenType.STRING_LITERAL, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
-      initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+      initial_index, current_index, current_token = reset_variables(initial_index, current_index)
       continue
       
     if len(current_token) == 1:
@@ -81,23 +78,23 @@ def parse_code(content: str) -> TokenList:
     match current_token:
       case _ if current_token in c_types:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.TYPE, current_token, MONOKAI_THEME[TokenType.TYPE], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
         continue
       case _ if current_token in c_identifiers:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.IDENT, current_token, MONOKAI_THEME[TokenType.IDENT],initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
         continue
       case _ if current_token in c_punctuators:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.PUNCTUATORS, current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
         continue
       case _ if current_token in c_keywords:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.OP, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+        add_token_to_list(token_list=tokens, new_token=Token(TokenType.KEYWORD, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
         continue
       case _ if current_token in c_functions:
         add_token_to_list(token_list=tokens, new_token=Token(TokenType.FUNCTION, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index, current_token)
+        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
         continue
       case _:
         current_index += 1
