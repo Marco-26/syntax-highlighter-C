@@ -11,6 +11,7 @@ class LexerEvents(Enum):
   
 class LexerDirective(Enum):
   CONTINUE = auto()
+  SAVE_TOKEN = auto()
 
 class LexerStateMachine:
   def __init__(self) -> None:
@@ -19,24 +20,14 @@ class LexerStateMachine:
   def switch_state(self, new_state: LexerStates) -> None:
     self.current_state = new_state
   
-  def on_event(self, event: LexerEvents, action, *actionArgs) -> None:
+  def on_event(self, event: LexerEvents) -> LexerDirective:
     match(event):
       case LexerEvents.FOUND_QUOTATION_MARKS:
-        
         if self.current_state == LexerStates.STRING:
           self.switch_state(LexerStates.NORMAL)
-        else:
-          self.switch_state(LexerStates.STRING)
-          
-        return action(*actionArgs)
-      case LexerEvents.FOUND_NUMBER:
-        if self.current_state == LexerStates.NUMBER:
-          self.switch_state(LexerStates.NUMBER)
-          action(*actionArgs)
-          return
+          return LexerDirective.SAVE_TOKEN
         
-        self.switch_state(LexerStates.NUMBER)
-        return
+        self.switch_state(LexerStates.STRING)
     
   @property
   def state(self) -> LexerStates:

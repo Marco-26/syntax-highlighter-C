@@ -71,10 +71,14 @@ class Lexer:
 
       # indentified string
       if current_character == '"':
-        res = self.state_machine.on_event(LexerEvents.FOUND_QUOTATION_MARKS, self.lexer_found_quotation_marks_action)
+        res = self.state_machine.on_event(LexerEvents.FOUND_QUOTATION_MARKS)
         if res == LexerDirective.CONTINUE:
+          self.current_index += 1
           continue
-        
+        elif res == LexerDirective.SAVE_TOKEN:
+          self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
+          continue
+
       match self.current_token:
         case _ if self.current_token in c_types:
           self.add_token_to_list(new_token=Token(TokenType.TYPE, self.current_token, MONOKAI_THEME[TokenType.TYPE], self.initial_index, self.current_index))
@@ -99,14 +103,6 @@ class Lexer:
       
     return self.token_list
   
-  def lexer_found_quotation_marks_action(self):
-    if self.state_machine.current_state != LexerStates.NORMAL:
-      self.current_index += 1
-      return LexerDirective.CONTINUE
-      
-    self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
-    
-    return LexerDirective.CONTINUE
 
 def read_file_content(filepath:str) -> str:
   with open(filepath, "r") as file:
@@ -127,4 +123,4 @@ if __name__ == "__main__":
   tokens = lexer.parse_code(content=content)
   
   for token in tokens:
-      print(token)
+    print(token)
