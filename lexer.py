@@ -3,12 +3,10 @@ import os
 import sys
 from dataclasses import dataclass
 from token_types import TokenType
-from themes import AVAILABLE_THEMES, MONOKAI_THEME
 from state_machine import LexerStateMachine, LexerEvents, LexerStates, LexerDirective
 
 parser = argparse.ArgumentParser(prog="C Syntax Highlighter")
 parser.add_argument("filepath")
-parser.add_argument("-theme", choices=AVAILABLE_THEMES, default=AVAILABLE_THEMES["MONOKAI_THEME"])
 
 c_types = {"int", "float", "char"}
 c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
@@ -19,7 +17,6 @@ c_functions = {'printf'}
 class Token:
   token_type: TokenType
   token_value: str
-  token_color: str
   starting_pos: int
   ending_pos: int
   
@@ -66,7 +63,7 @@ class Lexer:
           self.current_index += 1
           continue
         
-        self.add_token_to_list(new_token=Token(TokenType.NUMBER, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
+        self.add_token_to_list(new_token=Token(TokenType.NUMBER, self.current_token, self.initial_index, self.current_index))
         continue
 
       # indentified string
@@ -76,26 +73,26 @@ class Lexer:
           self.current_index += 1
           continue
         elif res == LexerDirective.SAVE_TOKEN:
-          self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
+          self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, self.initial_index, self.current_index))
           continue
 
       match self.current_token:
         case _ if self.current_token in c_types:
-          self.add_token_to_list(new_token=Token(TokenType.TYPE, self.current_token, MONOKAI_THEME[TokenType.TYPE], self.initial_index, self.current_index))
+          self.add_token_to_list(new_token=Token(TokenType.TYPE, self.current_token, self.initial_index, self.current_index))
           continue
         case _ if self.current_token in c_punctuators:
-          self.add_token_to_list(new_token=Token(TokenType.PUNCTUATORS, self.current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], self.initial_index, self.current_index))
+          self.add_token_to_list(new_token=Token(TokenType.PUNCTUATORS, self.current_token, self.initial_index, self.current_index))
           continue
         case _ if self.current_token in c_keywords:
-          self.add_token_to_list(new_token=Token(TokenType.KEYWORD, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+          self.add_token_to_list(new_token=Token(TokenType.KEYWORD, self.current_token, self.initial_index, self.current_index))
           continue
         case _ if self.current_token in c_functions:
-          self.add_token_to_list(new_token=Token(TokenType.FUNCTION, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+          self.add_token_to_list(new_token=Token(TokenType.FUNCTION, self.current_token, self.initial_index, self.current_index))
           continue
         case _:
           # identifier found
           if self.current_token.isalpha() and self.current_index + 1 <= content_length and not content[self.current_index + 1].isalpha() :
-            self.add_token_to_list(new_token=Token(TokenType.IDENT, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+            self.add_token_to_list(new_token=Token(TokenType.IDENT, self.current_token, self.initial_index, self.current_index))
             continue
           
           self.current_index += 1
@@ -113,7 +110,6 @@ def read_file_content(filepath:str) -> str:
 if __name__ == "__main__":
   args = parser.parse_args()
   filepath = args.filepath
-  theme = args.theme
   
   if not os.path.exists(filepath):
     print("Filepath provided does not exists...")
