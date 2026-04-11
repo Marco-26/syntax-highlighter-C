@@ -51,7 +51,6 @@ class Lexer:
     
     while self.current_index < content_length:
       current_character = content[self.current_index]
-      print(self.current_index, current_character)
       self.current_token += current_character
       
       if current_character.isspace():
@@ -101,12 +100,11 @@ class Lexer:
     return self.token_list
   
   def lexer_found_quotation_marks_action(self):
-    if self.state_machine.current_state != LexerStates.STRING:
+    if self.state_machine.current_state != LexerStates.NORMAL:
       self.current_index += 1
       return LexerDirective.CONTINUE
       
     self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
-    self.reset_variables()
     
     return LexerDirective.CONTINUE
 
@@ -128,6 +126,5 @@ if __name__ == "__main__":
   content = read_file_content(filepath=filepath)
   tokens = lexer.parse_code(content=content)
   
-  print("Total tokens:", len(tokens))
   for token in tokens:
       print(token)

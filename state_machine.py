@@ -22,10 +22,12 @@ class LexerStateMachine:
   def on_event(self, event: LexerEvents, action, *actionArgs) -> None:
     match(event):
       case LexerEvents.FOUND_QUOTATION_MARKS:
+        
         if self.current_state == LexerStates.STRING:
           self.switch_state(LexerStates.NORMAL)
         else:
           self.switch_state(LexerStates.STRING)
+          
         return action(*actionArgs)
       case LexerEvents.FOUND_NUMBER:
         if self.current_state == LexerStates.NUMBER:

@@ -1,5 +1,4 @@
-1. The ending parentesis of the C code is not being detected.
-2. Identifiers aren't detected - Unknown words like myVariable or myFunc get silently dropped. Only predefined sets (main, printf, etc.) are caught.
-3. Multi-char operators - ==, !=, <=, ->, ++, -- aren't handled.
-4. Single quotes - Character literals like 'a' aren't handled.
-5. Comments - // and /* */ aren't handled.
+1. Identifiers aren't detected - Unknown words like myVariable or myFunc get silently dropped. Only predefined sets (main, printf, etc.) are caught.
+2. Multi-char operators - ==, !=, <=, ->, ++, -- aren't handled.
+3. Single quotes - Character literals like 'a' aren't handled.
+4. Comments - // and /* */ aren't handled.
