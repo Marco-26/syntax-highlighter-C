@@ -11,7 +11,6 @@ parser.add_argument("filepath")
 parser.add_argument("-theme", choices=AVAILABLE_THEMES, default=AVAILABLE_THEMES["MONOKAI_THEME"])
 
 c_types = {"int", "float", "char"}
-c_identifiers = {"main"} # this should not be a set. Identifiers are created during parsing, a user can identify a function by one name, while other user can identify it by another
 c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
 c_keywords = {'return'}
 c_functions = {'printf'}
@@ -53,6 +52,7 @@ class Lexer:
       current_character = content[self.current_index]
       self.current_token += current_character
       
+      # identified space
       if current_character.isspace():
         if self.state_machine.state != LexerStates.STRING:
           self.current_token = ""
@@ -83,9 +83,6 @@ class Lexer:
         case _ if self.current_token in c_types:
           self.add_token_to_list(new_token=Token(TokenType.TYPE, self.current_token, MONOKAI_THEME[TokenType.TYPE], self.initial_index, self.current_index))
           continue
-        case _ if self.current_token in c_identifiers:
-          self.add_token_to_list(new_token=Token(TokenType.IDENT, self.current_token, MONOKAI_THEME[TokenType.IDENT], self.initial_index, self.current_index))
-          continue
         case _ if self.current_token in c_punctuators:
           self.add_token_to_list(new_token=Token(TokenType.PUNCTUATORS, self.current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], self.initial_index, self.current_index))
           continue
@@ -96,6 +93,11 @@ class Lexer:
           self.add_token_to_list(new_token=Token(TokenType.FUNCTION, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
           continue
         case _:
+          # identifier found
+          if self.current_token.isalpha() and self.current_index + 1 <= content_length and not content[self.current_index + 1].isalpha() :
+            self.add_token_to_list(new_token=Token(TokenType.IDENT, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+            continue
+          
           self.current_index += 1
           continue
           
