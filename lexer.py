@@ -4,13 +4,20 @@ import sys
 from dataclasses import dataclass
 from token_types import TokenType
 from themes import AVAILABLE_THEMES, MONOKAI_THEME
+from state_machine import LexerStateMachine, LexerEvents, LexerStates, LexerDirective
 
 parser = argparse.ArgumentParser(prog="C Syntax Highlighter")
 parser.add_argument("filepath")
 parser.add_argument("-theme", choices=AVAILABLE_THEMES, default=AVAILABLE_THEMES["MONOKAI_THEME"])
 
+c_types = {"int", "float", "char"}
+c_identifiers = {"main"} # this should not be a set. Identifiers are created during parsing, a user can identify a function by one name, while other user can identify it by another
+c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
+c_keywords = {'return'}
+c_functions = {'printf'}
+
 @dataclass(frozen=True, slots=True)
-class Token():
+class Token:
   token_type: TokenType
   token_value: str
   token_color: str
@@ -19,89 +26,89 @@ class Token():
   
 type TokenList = list[Token]
 
-def add_token_to_list(token_list: TokenList, new_token: Token):
-  token_list.append(new_token)
+class Lexer:
+  def __init__(self):
+    self.token_list: TokenList = []
   
-def reset_variables(initial_index: int, current_index: int):
-  return initial_index + 1, current_index + 1, ""
+    self.current_token: str = ""
+    
+    self.initial_index = 0
+    self.current_index = 0
+    
+    self.state_machine = LexerStateMachine()
 
-c_types = {"int", "float", "char"}
-c_identifiers = {"main"} # this should not be a set. Identifiers are created during parsing, a user can identify a function by one name, while other user can identify it by another
-c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
-c_keywords = {'return'}
-c_functions = {'printf'}
+  def add_token_to_list(self, new_token: Token):
+    self.token_list.append(new_token)
+    self.reset_variables()
+  
+  def reset_variables(self) -> None:
+    self.initial_index = self.initial_index + 1
+    self.current_index = self.current_index + 1
+    self.current_token = ""
+  
+  def parse_code(self, content:str) -> TokenList:
+    content_length = len(content)
+    
+    while self.current_index < content_length:
+      current_character = content[self.current_index]
+      print(self.current_index, current_character)
+      self.current_token += current_character
+      
+      if current_character.isspace():
+        if self.state_machine.state != LexerStates.STRING:
+          self.current_token = ""
+          
+        self.current_index += 1
+        continue
+      
+      # indentified number
+      if current_character.isdigit():
+        if self.current_index + 1 < content_length and not content[self.current_index + 1].isspace() and content[self.current_index + 1].isdigit():
+          self.current_index += 1
+          continue
+        
+        self.add_token_to_list(new_token=Token(TokenType.NUMBER, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
+        continue
 
-def parse_code(content: str) -> TokenList:
-  tokens: TokenList = []
-  
-  current_token: str = ""
-  content_length = len(content)
-  
-  initial_index = 0
-  current_index = 0
-  
-  is_in_string_literal = False
-  
-  while current_index < content_length:
-    current_character = content[current_index]
-    current_token += current_character
-    
-    if current_character.isspace():
-      if not is_in_string_literal:
-        current_token = ""
+      # indentified string
+      if current_character == '"':
+        res = self.state_machine.on_event(LexerEvents.FOUND_QUOTATION_MARKS, self.lexer_found_quotation_marks_action)
+        if res == LexerDirective.CONTINUE:
+          continue
         
-      current_index += 1
-      continue
-    
-    # indentified number
-    if current_character.isdigit():
-      if current_index + 1 < content_length and not content[current_index + 1].isspace() and content[current_index + 1].isdigit():
-        current_index += 1
-        continue
+      match self.current_token:
+        case _ if self.current_token in c_types:
+          self.add_token_to_list(new_token=Token(TokenType.TYPE, self.current_token, MONOKAI_THEME[TokenType.TYPE], self.initial_index, self.current_index))
+          continue
+        case _ if self.current_token in c_identifiers:
+          self.add_token_to_list(new_token=Token(TokenType.IDENT, self.current_token, MONOKAI_THEME[TokenType.IDENT], self.initial_index, self.current_index))
+          continue
+        case _ if self.current_token in c_punctuators:
+          self.add_token_to_list(new_token=Token(TokenType.PUNCTUATORS, self.current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], self.initial_index, self.current_index))
+          continue
+        case _ if self.current_token in c_keywords:
+          self.add_token_to_list(new_token=Token(TokenType.KEYWORD, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+          continue
+        case _ if self.current_token in c_functions:
+          self.add_token_to_list(new_token=Token(TokenType.FUNCTION, self.current_token, MONOKAI_THEME[TokenType.OP], self.initial_index, self.current_index))
+          continue
+        case _:
+          self.current_index += 1
+          continue
+          
+      self.current_index += 1
       
-      add_token_to_list(token_list=tokens, new_token=Token(TokenType.NUMBER, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
-      initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-      continue
-    
-    if current_character == '"':
-      if not is_in_string_literal:
-        is_in_string_literal = True
-        current_index += 1
-        continue
+    return self.token_list
+  
+  def lexer_found_quotation_marks_action(self):
+    if self.state_machine.current_state != LexerStates.STRING:
+      self.current_index += 1
+      return LexerDirective.CONTINUE
       
-      is_in_string_literal = False
-      add_token_to_list(token_list=tokens, new_token=Token(TokenType.STRING_LITERAL, current_token, MONOKAI_THEME[TokenType.NUMBER], initial_index, current_index))
-      initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-      continue
-      
-    match current_token:
-      case _ if current_token in c_types:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.TYPE, current_token, MONOKAI_THEME[TokenType.TYPE], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-        continue
-      case _ if current_token in c_identifiers:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.IDENT, current_token, MONOKAI_THEME[TokenType.IDENT],initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-        continue
-      case _ if current_token in c_punctuators:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.PUNCTUATORS, current_token, MONOKAI_THEME[TokenType.PUNCTUATORS], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-        continue
-      case _ if current_token in c_keywords:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.KEYWORD, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-        continue
-      case _ if current_token in c_functions:
-        add_token_to_list(token_list=tokens, new_token=Token(TokenType.FUNCTION, current_token, MONOKAI_THEME[TokenType.OP], initial_index, current_index))
-        initial_index, current_index, current_token = reset_variables(initial_index, current_index)
-        continue
-      case _:
-        current_index += 1
-        continue
-        
-    current_index += 1
+    self.add_token_to_list(new_token=Token(TokenType.STRING_LITERAL, self.current_token, MONOKAI_THEME[TokenType.NUMBER], self.initial_index, self.current_index))
+    self.reset_variables()
     
-  return tokens
+    return LexerDirective.CONTINUE
 
 def read_file_content(filepath:str) -> str:
   with open(filepath, "r") as file:
@@ -115,9 +122,11 @@ if __name__ == "__main__":
   if not os.path.exists(filepath):
     print("Filepath provided does not exists...")
     sys.exit(1)
+    
+  lexer = Lexer()
   
   content = read_file_content(filepath=filepath)
-  tokens = parse_code(content=content)
+  tokens = lexer.parse_code(content=content)
   
   print("Total tokens:", len(tokens))
   for token in tokens:
