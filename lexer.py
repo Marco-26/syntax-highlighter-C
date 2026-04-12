@@ -3,9 +3,7 @@ import os
 import sys
 from dataclasses import dataclass
 from token_types import TokenType
-from state_machine import LexerStateMachine, LexerEvents, LexerStates, LexerDirective
-
-
+from reader import Reader
 
 c_types = {"int", "float", "char"}
 c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
@@ -25,82 +23,77 @@ class Lexer:
   def __init__(self):
     self.token_list: TokenList = []
   
-    self.current_token: str = ""
-    
-    self.initial_index = 0
-    self.current_index = 0
-    
-    self.state_machine = LexerStateMachine()
-
-  def add_token_to_list(self, token_type: TokenType):
-    new_token = Token(token_type, self.current_token, self.initial_index, self.current_index)
-    self.token_list.append(new_token)
-    self.reset_variables()
-  
-  def reset_variables(self) -> None:
-    self.initial_index = self.current_index + 1
-    self.current_index = self.current_index + 1
-    self.current_token = ""
-  
   def parse_code(self, content:str) -> TokenList:
-    content_length = len(content)
+    reader = Reader(content)
     
-    while self.current_index < content_length:
-      current_character = content[self.current_index]
-      self.current_token += current_character
-      
-      # identified space
-      if current_character.isspace():
-        if self.state_machine.state != LexerStates.STRING:
-          self.current_token = ""
-          
-        self.current_index += 1
-        continue
-      
-      # indentified number
-      if current_character.isdigit():
-        if self.current_index + 1 < content_length and not content[self.current_index + 1].isspace() and content[self.current_index + 1].isdigit():
-          self.current_index += 1
-          continue
-        
-        self.add_token_to_list(TokenType.NUMBER)
-        continue
+    while not reader.at_end():
+      char = reader.peek()
 
-      # indentified string
-      if current_character == '"':
-        res = self.state_machine.on_event(LexerEvents.FOUND_QUOTATION_MARKS)
-        if res == LexerDirective.CONTINUE:
-          self.current_index += 1
-          continue
-        elif res == LexerDirective.SAVE_TOKEN:
-          self.add_token_to_list(TokenType.STRING_LITERAL)
-          continue
-        
-      match self.current_token:
-        case _ if self.current_token in c_types:
-          self.add_token_to_list(TokenType.TYPE)
-          continue
-        case _ if self.current_token in c_punctuators:
-          self.add_token_to_list(TokenType.PUNCTUATORS)
-          continue
-        case _ if self.current_token in c_keywords:
-          self.add_token_to_list(TokenType.KEYWORD)
-          continue
-        case _ if self.current_token in c_functions:
-          self.add_token_to_list(TokenType.FUNCTION)
-          continue
-        case _:
-          # identifier found
-          if self.current_token.isalpha() and self.current_index + 1 < content_length and not content[self.current_index + 1].isalpha() :
-            self.add_token_to_list(TokenType.IDENT)
-            continue
-          
-          self.current_index += 1
-          continue
-          
-      self.current_index += 1
-      
+      if char.isspace():
+        reader.advance()
+      elif char == '"':
+        self.token_list.append(self.handle_string(reader))
+      elif char.isalpha():
+        self.token_list.append(self.handle_word(reader))
+      elif char.isdigit():
+        self.token_list.append(self.handle_numbers(reader))
+      elif not char.isalpha() and not char.isdigit():
+        self.token_list.append(self.handle_symbols(reader))
+         
     return self.token_list
+    
+  def handle_string(self, reader: Reader):
+    start_index = reader.current_index
+    
+    reader.advance()
+    
+    while not reader.at_end() and not reader.peek() == '"':
+      reader.advance()
+    
+    word = reader.content[start_index:reader.current_index + 1]
+    reader.advance()
+    
+    return Token(TokenType.STRING_LITERAL, word, start_index, reader.current_index)
+      
+  def handle_word(self, reader: Reader):
+    start_index = reader.current_index
+    
+    while not reader.at_end() and reader.peek().isalpha():
+      reader.advance()
+      
+    word = reader.content[start_index:reader.current_index]
+    
+    token_type = None
+    
+    match word:
+      case _ if word in c_types:
+        token_type = TokenType.TYPE
+      case _ if word in c_keywords:
+        token_type = TokenType.KEYWORD
+      case _ if word in c_functions:
+        token_type = TokenType.FUNCTION
+      case _:
+        token_type = TokenType.IDENT
+      
+    return Token(token_type, word, start_index, reader.current_index)
+  
+  def handle_symbols(self, reader:Reader):
+    start_index = reader.current_index
+    
+    symbol = reader.content[start_index]
+    reader.advance()
+    
+    return Token(TokenType.PUNCTUATORS, symbol, start_index, reader.current_index )
+  
+  def handle_numbers(self, reader: Reader):
+    start_index = reader.current_index
+    
+    while not reader.at_end() and reader.peek().isdigit():
+      reader.advance()
+    
+    number = reader.content[start_index: reader.current_index]
+    
+    return Token(TokenType.NUMBER, number, start_index, reader.current_index)
   
 def read_file_content(filepath:str) -> str:
   with open(filepath, "r") as file:
@@ -121,5 +114,6 @@ if __name__ == "__main__":
   content = read_file_content(filepath=filepath)
   tokens = lexer.parse_code(content=content)
   
+  print(len(tokens))
   for token in tokens:
     print(token)
