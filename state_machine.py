@@ -28,6 +28,7 @@ class LexerStateMachine:
           return LexerDirective.SAVE_TOKEN
         
         self.switch_state(LexerStates.STRING)
+        return LexerDirective.CONTINUE
     
   @property
   def state(self) -> LexerStates:

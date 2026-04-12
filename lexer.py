@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from token_types import TokenType
 from state_machine import LexerStateMachine, LexerEvents, LexerStates, LexerDirective
 
-parser = argparse.ArgumentParser(prog="C Syntax Highlighter")
-parser.add_argument("filepath")
+
 
 c_types = {"int", "float", "char"}
 c_punctuators = {'{','}', '(', ')', '[', ']', ';'}
@@ -39,7 +38,7 @@ class Lexer:
     self.reset_variables()
   
   def reset_variables(self) -> None:
-    self.initial_index = self.initial_index + 1
+    self.initial_index = self.current_index + 1
     self.current_index = self.current_index + 1
     self.current_token = ""
   
@@ -76,7 +75,7 @@ class Lexer:
         elif res == LexerDirective.SAVE_TOKEN:
           self.add_token_to_list(TokenType.STRING_LITERAL)
           continue
-
+        
       match self.current_token:
         case _ if self.current_token in c_types:
           self.add_token_to_list(TokenType.TYPE)
@@ -92,7 +91,7 @@ class Lexer:
           continue
         case _:
           # identifier found
-          if self.current_token.isalpha() and self.current_index + 1 <= content_length and not content[self.current_index + 1].isalpha() :
+          if self.current_token.isalpha() and self.current_index + 1 < content_length and not content[self.current_index + 1].isalpha() :
             self.add_token_to_list(TokenType.IDENT)
             continue
           
@@ -103,12 +102,13 @@ class Lexer:
       
     return self.token_list
   
-
 def read_file_content(filepath:str) -> str:
   with open(filepath, "r") as file:
     return file.read()
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser(prog="C Syntax Highlighter")
+  parser.add_argument("filepath")
   args = parser.parse_args()
   filepath = args.filepath
   
